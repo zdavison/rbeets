@@ -114,3 +114,20 @@ def test_the_server_exits_cleanly_after_the_last_event(root):
     done = rbeets(f"localhost:{root}", "version")
     assert done.returncode == 0
     assert b"Fatal Python error" not in done.stderr
+
+
+def test_import_l_pretend_runs_through_the_protocol(root, make_album):
+    # Every album here has an ID, so the run makes no MusicBrainz request.
+    make_album("Artist A", "First", mb_albumid=ALBUM_ID)
+    rbeets(f"localhost:{root}", "import", "-A")
+    done = rbeets("--json", f"localhost:{root}", "import", "-L", "--pretend", "Artist A")
+    assert done.returncode == 0, done.stderr
+    assert events(done)[-1]["proposed"] == 0
+
+
+def test_import_without_a_mode_exits_1(root):
+    assert rbeets(f"localhost:{root}", "import").returncode == 1
+
+
+def test_a_subpath_outside_the_root_exits_3(root):
+    assert rbeets(f"localhost:{root}", "import", "-A", "..").returncode == 3
