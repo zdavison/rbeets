@@ -20,7 +20,7 @@ class Session:
     # The absolute path of the server's own executable, for restrict.
     executable: str = "rbeets"
 
-    def progress(self, done: int, total: int | None, album: str, **extra: str) -> None:
+    def progress(self, done: int, total: int | None, album: str, **extra: object) -> None:
         self.send({"type": "progress", "done": done, "total": total, "album": album, **extra})
 
     def log(self, level: str, message: str) -> None:

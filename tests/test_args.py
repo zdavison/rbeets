@@ -24,3 +24,15 @@ def test_import_without_a_mode_is_a_usage_error(session):
     with pytest.raises(Failure) as caught:
         import_.run(session, [])
     assert caught.value.code == 1
+
+
+def test_import_with_both_modes_is_a_usage_error(session):
+    with pytest.raises(Failure) as caught:
+        import_.run(session, ["-A", "-L"])
+    assert caught.value.code == 1
+
+
+def test_pretend_with_import_a_is_a_usage_error(session):
+    with pytest.raises(Failure) as caught:
+        import_.run(session, ["-A", "--pretend"])
+    assert caught.value.code == 1
