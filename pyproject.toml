@@ -1,0 +1,20 @@
+[project]
+name = "rbeets"
+version = "0.1.0"
+description = "Run beets on a remote host over SSH"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["beets>=2.14,<3"]
+
+[project.scripts]
+rbeets = "rbeets.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
