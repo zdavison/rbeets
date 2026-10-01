@@ -12,7 +12,7 @@ from rbeets.output import human_handler, json_handler
 from rbeets.protocol import USAGE
 from rbeets.target import parse_target
 
-COMMAND_NAMES = ["hello", "index", "refresh", "stats", "restrict"]
+COMMAND_NAMES = ["version", "import", "mbsync", "stats", "restrict"]
 
 
 class _Parser(argparse.ArgumentParser):
@@ -37,7 +37,7 @@ def run(argv: list[str]) -> int:
     parser.add_argument("--json", action="store_true", help="print each event as one JSON line")
     parser.add_argument("target", metavar="HOST:ROOT")
     parser.add_argument("command", choices=COMMAND_NAMES)
-    parser.add_argument("args", nargs="*")
+    parser.add_argument("args", nargs=argparse.REMAINDER)
     opts = parser.parse_args(argv)
     try:
         target = parse_target(opts.target)
@@ -52,10 +52,8 @@ def run(argv: list[str]) -> int:
         except OSError as exc:
             parser.error(f"cannot read {opts.args[0]}: {exc.strerror}")
         return client.restrict(opts.ssh, target, opts.rbeets_path, public_key, on_event)
-    if opts.args:
-        parser.error(f"{opts.command} takes no arguments")
     remote = client.server_command(opts.rbeets_path, target.root)
-    return client.run(opts.ssh, target, remote, opts.command, [], on_event)
+    return client.run(opts.ssh, target, remote, opts.command, opts.args, on_event)
 
 
 def _server(argv: list[str]) -> int:

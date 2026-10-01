@@ -1,4 +1,4 @@
-"""refresh: read changed files into the database, then sync each album with MusicBrainz.
+"""mbsync: read changed files into the database, then sync each album with MusicBrainz.
 
 The read step does what `beet update` does, without moves. Without it, a tag
 edit made in another tagger stays only in the file, and the sync writes the
@@ -103,7 +103,7 @@ def read_changed(lib: library.Library) -> int:
 
 def run(session: Session, args: list[str], lookup: Lookup = default_lookup) -> dict:
     if args:
-        raise Failure(USAGE, "refresh takes no arguments")
+        raise Failure(USAGE, "mbsync takes no arguments")
     backup(session.state)
     lib = open_library(session.root, session.state)
     read = read_changed(lib)

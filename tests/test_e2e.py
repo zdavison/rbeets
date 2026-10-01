@@ -29,7 +29,7 @@ def events(done: subprocess.CompletedProcess) -> list[dict]:
 
 
 def test_hello_reports_the_server_versions(root):
-    done = rbeets("--json", f"localhost:{root}", "hello")
+    done = rbeets("--json", f"localhost:{root}", "version")
     assert done.returncode == 0, done.stderr
     assert [e["type"] for e in events(done)] == ["ready", "result"]
 
@@ -37,7 +37,7 @@ def test_hello_reports_the_server_versions(root):
 def test_index_then_stats(root, make_album):
     make_album("Artist A", "First", mb_albumid=ALBUM_ID)
     make_album("Artist B", "Second")
-    assert rbeets("--json", f"localhost:{root}", "index").returncode == 0
+    assert rbeets("--json", f"localhost:{root}", "import", "-A").returncode == 0
     result = events(rbeets("--json", f"localhost:{root}", "stats"))[-1]
     assert (result["albums"], result["tracks"]) == (2, 4)
     assert [m["album"] for m in result["missing_mb_albumid"]] == ["Second"]
@@ -45,25 +45,25 @@ def test_index_then_stats(root, make_album):
 
 def test_refresh_skips_albums_without_an_id_with_no_network(root, make_album):
     make_album("Artist B", "Second")
-    rbeets(f"localhost:{root}", "index")
-    result = events(rbeets("--json", f"localhost:{root}", "refresh"))[-1]
+    rbeets(f"localhost:{root}", "import", "-A")
+    result = events(rbeets("--json", f"localhost:{root}", "mbsync"))[-1]
     assert (result["skipped"], result["failed"]) == (1, 0)
 
 
 def test_human_output_prints_the_result(root):
-    done = rbeets(f"localhost:{root}", "hello")
+    done = rbeets(f"localhost:{root}", "version")
     assert done.returncode == 0
-    assert b"protocol: 1" in done.stdout
+    assert b"protocol: 2" in done.stdout
 
 
 def test_a_missing_root_exits_3(tmp_path):
-    assert rbeets(f"localhost:{tmp_path / 'missing'}", "hello").returncode == 3
+    assert rbeets(f"localhost:{tmp_path / 'missing'}", "version").returncode == 3
 
 
 def test_an_ssh_failure_passes_the_ssh_exit_code_through(root):
     failing_ssh = shlex.join([sys.executable, "-c", "import sys; sys.exit(255)"])
     done = subprocess.run(
-        [RBEETS, "-e", failing_ssh, f"localhost:{root}", "hello"], capture_output=True, timeout=30
+        [RBEETS, "-e", failing_ssh, f"localhost:{root}", "version"], capture_output=True, timeout=30
     )
     assert done.returncode == 255
 
@@ -93,10 +93,10 @@ def test_restrict_pins_a_root_with_quotes(tmp_path, key_setup):
     assert lines[1].startswith('restrict,command="') and lines[1].endswith(KEY)
 
     # The pinned key works on its own root, and on no other.
-    assert rbeets(f"localhost:{root}", "hello", env=env).returncode == 0
+    assert rbeets(f"localhost:{root}", "version", env=env).returncode == 0
     other = tmp_path / "other"
     other.mkdir()
-    assert rbeets(f"localhost:{other}", "hello", env=env).returncode == 3
+    assert rbeets(f"localhost:{other}", "version", env=env).returncode == 3
     # The pinned key cannot restrict itself again.
     assert rbeets(f"localhost:{root}", "restrict", str(public), env=env).returncode == 6
 
@@ -111,6 +111,6 @@ def test_restrict_reports_a_connection_that_still_runs_other_commands(root, key_
 
 
 def test_the_server_exits_cleanly_after_the_last_event(root):
-    done = rbeets(f"localhost:{root}", "hello")
+    done = rbeets(f"localhost:{root}", "version")
     assert done.returncode == 0
     assert b"Fatal Python error" not in done.stderr

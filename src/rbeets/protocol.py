@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 
-PROTOCOL = 1
+PROTOCOL = 2
 
 OK = 0
 USAGE = 1

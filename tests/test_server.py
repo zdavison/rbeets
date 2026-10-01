@@ -10,7 +10,7 @@ from rbeets.server import serve, watch
 from rbeets.state import lock, state_dir
 
 
-def hello(root, command="hello", args=(), protocol=PROTOCOL) -> dict:
+def hello(root, command="version", args=(), protocol=PROTOCOL) -> dict:
     return {
         "type": "hello",
         "protocol": protocol,
@@ -80,7 +80,7 @@ def test_restrict_on_a_pinned_server_exits_6(root):
 def test_a_second_command_on_a_locked_root_is_busy(root, make_album):
     make_album("Artist A", "First")
     with lock(state_dir(str(root))):
-        code, events = exchange(root, encode(hello(root, "index")))
+        code, events = exchange(root, encode(hello(root, "import", ["-A"])))
     assert code == 4
     assert [e["type"] for e in events] == ["ready", "error"]
     assert not (state_dir(str(root)) / "library.db").exists()
@@ -112,3 +112,7 @@ def test_protect_stdout_moves_prints_to_stderr():
     done = subprocess.run([sys.executable, "-c", program], capture_output=True, check=True)
     assert done.stdout == b"protocol\n"
     assert b"beets noise" in done.stderr
+
+
+def test_extra_arguments_exit_1(root):
+    assert exchange(root, encode(hello(root, "stats", ["extra"])))[0] == 1

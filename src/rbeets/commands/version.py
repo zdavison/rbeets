@@ -1,4 +1,4 @@
-"""hello: report the versions of the server."""
+"""version: report the versions of the server, as beet version does."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from rbeets.session import Session
 
 def run(session: Session, args: list[str]) -> dict:
     if args:
-        raise Failure(USAGE, "hello takes no arguments")
+        raise Failure(USAGE, "version takes no arguments")
     return {
         "protocol": PROTOCOL,
         "rbeets": __version__,

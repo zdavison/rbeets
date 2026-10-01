@@ -74,7 +74,7 @@ def restrict(ssh: str, target: Target, rbeets_path: str, public_key: str, on_eve
         return code
     # Ask for `echo`. A restricted key runs the forced command instead, and the
     # server answers. An unrestricted key runs echo, and the text is not a message.
-    check = run(ssh, target, "echo rbeets-unrestricted", "hello", [], lambda event: None)
+    check = run(ssh, target, "echo rbeets-unrestricted", "version", [], lambda event: None)
     if check == OK:
         on_event({"type": "log", "level": "info", "message": "the key now runs rbeets only, on this root"})
         return OK

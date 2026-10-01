@@ -1,4 +1,4 @@
-"""index: import ROOT into the database as it is, with no lookups."""
+"""import -A: add albums to the database as they are, with no lookups."""
 
 from __future__ import annotations
 
@@ -8,7 +8,6 @@ from beets.importer import ImportAbortError, ImportSession
 from beets.plugins import BeetsPlugin
 
 from rbeets.beetsenv import open_library
-from rbeets.protocol import USAGE, Failure
 from rbeets.session import Session
 from rbeets.state import backup
 
@@ -27,9 +26,8 @@ class _AsIsSession(ImportSession):
         raise AssertionError("autotag is off")
 
 
-def run(session: Session, args: list[str]) -> dict:
-    if args:
-        raise Failure(USAGE, "index takes no arguments")
+def import_as_is(session: Session, folder: str) -> dict:
+    """import -A: add the albums under FOLDER to the database as they are."""
     backup(session.state)
     lib = open_library(session.root, session.state)
     added = 0
@@ -45,7 +43,7 @@ def run(session: Session, args: list[str]) -> dict:
     listeners = BeetsPlugin.listeners["album_imported"]
     listeners.append(on_album_imported)
     try:
-        _AsIsSession(lib, None, [os.fsencode(session.root)]).run()
+        _AsIsSession(lib, None, [os.fsencode(folder)]).run()
     finally:
         listeners.remove(on_album_imported)
     return {"albums_added": added, "albums": len(lib.albums()), "tracks": len(lib.items())}
