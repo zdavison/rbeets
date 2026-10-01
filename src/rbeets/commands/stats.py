@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-import os
-
+from rbeets import subpath
 from rbeets.beetsenv import open_library
 from rbeets.protocol import USAGE, Failure
 from rbeets.session import Session
@@ -18,7 +17,7 @@ def run(session: Session, args: list[str]) -> dict:
         {
             "albumartist": album.albumartist,
             "album": album.album,
-            "path": os.path.dirname(os.fsdecode(album.items().get().path)),
+            "path": subpath.album_folder(album),
         }
         for album in albums
         if not album.mb_albumid
