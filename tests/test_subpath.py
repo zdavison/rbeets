@@ -61,3 +61,32 @@ def test_stats_still_lists_album_folders(session, make_album):
     folder = make_album("Artist B", "Second")
     import_.run(session, ["-A"])
     assert stats.run(session, [])["missing_mb_albumid"][0]["path"] == str(folder)
+
+
+@pytest.fixture
+def linked_root(tmp_path):
+    """ROOT is a symlink to the real music folder."""
+    real = tmp_path / "real"
+    (real / "months").mkdir(parents=True)
+    os.symlink(real, tmp_path / "linked")
+    return tmp_path / "linked"
+
+
+def test_an_absolute_path_inside_a_linked_root_exits_3(linked_root, tmp_path):
+    with pytest.raises(Failure) as caught:
+        subpath.resolve(str(linked_root), str(tmp_path / "real" / "months"))
+    assert caught.value.code == 3
+
+
+def test_a_dot_dot_path_back_into_a_linked_root_exits_3(linked_root):
+    with pytest.raises(Failure) as caught:
+        subpath.resolve(str(linked_root), "../real/months")
+    assert caught.value.code == 3
+
+
+def test_a_symlink_alias_inside_the_root_exits_3(root):
+    (root / "months").mkdir()
+    os.symlink(root / "months", root / "alias")
+    with pytest.raises(Failure) as caught:
+        subpath.resolve(str(root), "alias")
+    assert caught.value.code == 3
