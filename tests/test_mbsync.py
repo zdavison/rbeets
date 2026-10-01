@@ -158,3 +158,26 @@ def test_refresh_looks_up_a_musicbrainz_id_changed_in_the_files(session, make_al
     asked = []
     mbsync.run(session, [], lookup=lambda album_id, source: asked.append(album_id) or release(album_id))
     assert asked == [SECOND]
+
+
+def test_pretend_reports_the_outcome(session, make_album):
+    make_album("Artist A", "First", mb_albumid=FIRST)
+    import_.run(session, ["-A"])
+    result = mbsync.run(session, ["--pretend"], lookup=lookup)
+    assert (result["updated"], result["pretend"]) == (1, True)
+
+
+def test_pretend_writes_no_file_and_no_database_value(session, make_album):
+    from rbeets.beetsenv import open_library
+
+    folder = make_album("Artist A", "First", mb_albumid=FIRST)
+    import_.run(session, ["-A"])
+    contents = (folder / "01.mp3").read_bytes()
+    mbsync.run(session, ["--pretend"], lookup=lookup)
+    assert (folder / "01.mp3").read_bytes() == contents
+    assert open_library(session.root, session.state).items().get().title == "Track 1"
+
+
+def test_an_unknown_flag_is_a_usage_error(session):
+    with pytest.raises(Failure):
+        mbsync.run(session, ["--move"], lookup=lookup)

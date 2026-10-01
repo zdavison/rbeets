@@ -18,7 +18,7 @@ from beets import library, metadata_plugins
 from beets.autotag import AlbumInfo, AlbumMatch, Distance, TrackInfo
 
 from rbeets.beetsenv import open_library
-from rbeets.protocol import USAGE, Failure
+from rbeets.commands import _args
 from rbeets.session import Session
 from rbeets.state import backup
 
@@ -51,7 +51,7 @@ def match_tracks(items: list[library.Item], info: AlbumInfo) -> dict[library.Ite
     return pairs
 
 
-def sync_album(lib: library.Library, album: library.Album, lookup: Lookup) -> str:
+def sync_album(lib: library.Library, album: library.Album, lookup: Lookup, pretend: bool = False) -> str:
     if not album.mb_albumid:
         return "skipped"
     items = list(album.items())
@@ -60,6 +60,11 @@ def sync_album(lib: library.Library, album: library.Album, lookup: Lookup) -> st
     if info is None:
         return "failed"
     before = [dict(item) for item in items]
+    if pretend:
+        # Apply the match to the items in memory only. Nothing is stored or written.
+        AlbumMatch(Distance(), info, match_tracks(items, info)).apply_metadata(from_scratch=False)
+        changed = any(dict(item) != old for item, old in zip(items, before))
+        return "updated" if changed else "unchanged"
     with lib.transaction():
         AlbumMatch(Distance(), info, match_tracks(items, info)).apply_metadata(from_scratch=False)
         changed = [item for item, old in zip(items, before) if dict(item) != old]
@@ -102,8 +107,8 @@ def read_changed(lib: library.Library) -> int:
 
 
 def run(session: Session, args: list[str], lookup: Lookup = default_lookup) -> dict:
-    if args:
-        raise Failure(USAGE, "mbsync takes no arguments")
+    flags, _paths = _args.parse("mbsync", args, {"--pretend"}, 0)
+    pretend = "--pretend" in flags
     backup(session.state)
     lib = open_library(session.root, session.state)
     read = read_changed(lib)
@@ -114,7 +119,7 @@ def run(session: Session, args: list[str], lookup: Lookup = default_lookup) -> d
             break
         name = f"{album.albumartist} - {album.album}"
         try:
-            outcome = sync_album(lib, album, lookup)
+            outcome = sync_album(lib, album, lookup, pretend)
         except Exception as exc:
             outcome = "failed"
             session.log("error", f"{name}: {type(exc).__name__}: {exc}")
@@ -128,4 +133,5 @@ def run(session: Session, args: list[str], lookup: Lookup = default_lookup) -> d
         "failed": outcomes["failed"],
         "read": read,
         "stopped": stopped,
+        "pretend": pretend,
     }
